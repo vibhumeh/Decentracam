@@ -23,7 +23,10 @@ describe("hasher", () => {
   let provider;
   let hasherProgram;
   let signer;
-
+let externalKeypair;
+let message;  
+let signature;
+let pubkey;
   before(async () => {
     context = await startAnchor("", [{name: 'hasher',programId: hasherAddress}], []);
     provider = new BankrunProvider(context);
@@ -32,6 +35,11 @@ describe("hasher", () => {
         IDL,
         provider,
       );  
+      externalKeypair = nacl.sign.keyPair();
+      message = Buffer.from('this is such a good message to s');
+  
+      signature = Buffer.from(nacl.sign.detached(message, externalKeypair.secretKey));
+      pubkey = Buffer.from(externalKeypair.publicKey) // Convert Uint8Array to Buffer
   })
   // const program = anchor.workspace.voter as Program<Hasher>;
 
@@ -54,7 +62,7 @@ describe("hasher", () => {
 
 
 
-  it("Stores hash!", async () => {
+  it("Fails to Stores hash!", async () => {
     await hasherProgram.methods.storeHash(
       new anchor.BN(1),
       "hello world",
@@ -104,33 +112,71 @@ describe("hasher", () => {
 
   })
   it("Tests verifyHash!", async () => {
-    const externalKeypair = nacl.sign.keyPair();
-    const message = Buffer.from("hello world");
-    const signature = nacl.sign.detached(message, externalKeypair.secretKey);
-    const pubkey = Buffer.from(externalKeypair.publicKey.toBytes()); // Convert Uint8Array to Buffer
+    // const externalKeypair = nacl.sign.keyPair();
+    // const message = Buffer.from('this is such a good message to s');
+
+    // const signature = Buffer.from(nacl.sign.detached(message, externalKeypair.secretKey));
+    // const pubkey = Buffer.from(externalKeypair.publicKey) // Convert Uint8Array to Buffer
     console.log("Public Key: ", pubkey);
     const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
       publicKey: pubkey, // Now a Buffer of 32 bytes
       message,
       signature,
     });
+    console.log("Pubkey length:", pubkey.length);       // should be 32
+console.log("Signature length:", signature.length); // should be 64
+console.log("Message length:", message.length);     // whatever is fine
 
     const verifyIx = await hasherProgram.methods
       .verifyEd25519Instruction(
-        Array.from(pubkey),      // expected_public_key: [u8; 32]
-        Array.from(message),     // message: &[u8]
-        Array.from(signature)    // signature: [u8; 64]
+        pubkey,      // expected_public_key: [u8; 32]
+        message,     // message: &[u8]
+        signature// signature: [u8; 64]
       )
       .accounts({
         instructionSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
       })
       .instruction();
 
-    const tx = new Transaction().add(ed25519Ix);
+    const tx = new Transaction().add(ed25519Ix,verifyIx);
 
     await provider.sendAndConfirm(tx);
+    const [counterAddress] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("counter"),                                      // b"counter"
+        signer.toBuffer()],                             // signer.key().as_ref()
+      hasherProgram.programId,
+    );    
+    const counter=await hasherProgram.account.counter.fetch(counterAddress);
+    console.log("Counter: ", counter);
   })
 
+  it("Stores hash properly after verification!!", async () => {
+    await hasherProgram.methods.storeHash(
+      new anchor.BN(1),
+      "hello world",
+    ).rpc();
+    const [hasherAddress] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("hash"),                                      // b"hash"
+      signer.toBuffer(),                              // signer.key().as_ref()
+      new anchor.BN(1).toArrayLike(Buffer, "le", 8)],
+      hasherProgram.programId,
+    );    
+    const hashes=await hasherProgram.account.hashes.fetch(hasherAddress);
+    console.log("Hash: ", hashes);
+    const [counterAddress] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("counter"),                                      // b"counter"
+        signer.toBuffer()],                             // signer.key().as_ref()
+      hasherProgram.programId,
+    );    
+    const counter=await hasherProgram.account.counter.fetch(counterAddress);
+    console.log("Counter: ", counter);
+    expect(counter.hashId.toNumber()).to.equal(2);
+    expect(hashes.hashId.toNumber()).to.equal(1);
+    expect(hashes.hashId.toNumber()).to.equal(1);
+
+
+
+  })
 
 
 });

@@ -14,16 +14,20 @@ pub mod hasher{
         let counter=&mut ctx.accounts.counter;
         counter.hash_id=1;//start from 1. increment by 1 AFTER checking with hash_counter each time
         //first hash will have hash_id=1 
+        counter.verified=false;
         //msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }
     pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64,hash: String) -> Result<()>{
         let counter=&mut ctx.accounts.counter;
         let storage=&mut ctx.accounts.hashes;
+        //require!(hash.len()<=32,ErrorCode::InvalidHash);
+        require!(counter.verified,ErrorCode::InvalidHash);
         require!(hash_id==counter.hash_id,CounterError::InvalidID);
         storage.hash_id=hash_id;
         storage.hash=hash;
         counter.hash_id+=1;
+        counter.verified=false;
         //msg!("counter hash_id: {}",counter.hash_id);
         Ok(())
     }
@@ -77,7 +81,10 @@ pub mod hasher{
         if &instruction_data[signature_offset..sig_end] != signature {
             return Err(ErrorCode::InvalidSignature.into());
         }
-    
+
+        // If all checks pass, return Ok
+        let counter = &mut ctx.accounts.counter;
+        counter.verified=true;
         Ok(())
     }
 }   
@@ -110,7 +117,6 @@ pub struct Initialize<'info> {
         bump
     )]
     pub counter:Account<'info,Counter>,
-
     pub system_program:Program<'info,System>
 }
 
@@ -137,9 +143,17 @@ pub struct StoreHash<'info> {
 }
 #[derive(Accounts)]
 pub struct VerifyEd25519Instruction<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
     /// CHECK: This is safe because we are verifying the instruction sysvar
     #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instruction_sysvar: AccountInfo<'info>,
+    #[account(
+        mut,
+        seeds=[b"counter", signer.key().as_ref()],
+        bump
+    )]
+    pub counter:Account<'info,Counter>,
 }
 
 
@@ -147,7 +161,10 @@ pub struct VerifyEd25519Instruction<'info> {
 #[derive(InitSpace)]
 pub struct Counter{
     pub hash_id: u64,
+    pub verified: bool,
 }
+
+
 
 #[account]
 #[derive(InitSpace)]

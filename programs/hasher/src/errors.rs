@@ -13,6 +13,8 @@ pub enum ErrorCode {
     InvalidMessage,
     #[msg("Invalid signature")]
     InvalidSignature,
+    #[msg("Invalid Hash")]
+    InvalidHash,
 }
 #[error_code]
 pub enum CounterError {
