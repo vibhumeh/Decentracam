@@ -14,3 +14,8 @@ pub enum ErrorCode {
     #[msg("Invalid signature")]
     InvalidSignature,
 }
+#[error_code]
+pub enum CounterError {
+    #[msg("Counter hash_id is not matching hash_id passed by user")]
+    InvalidID
+}
