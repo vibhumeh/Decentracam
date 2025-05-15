@@ -14,20 +14,19 @@ pub mod hasher{
         counter.hash_id=1;//start from 1. increment by 1 AFTER checking with hash_counter each time
         //first hash will have hash_id=1 
         counter.verified=false;
-        //msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }
     pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64,hash: String) -> Result<()>{
         let counter=&mut ctx.accounts.counter;
         let storage=&mut ctx.accounts.hashes;
-        //require!(hash.len()<=32,ErrorCode::InvalidHash);
+
         require!(counter.verified,ErrorCode::InvalidHash);
         require!(hash_id==counter.hash_id,CounterError::InvalidID);
         storage.hash_id=hash_id;
-        storage.hash=hash;
-        counter.hash_id+=1;
-        counter.verified=false;
-        //msg!("counter hash_id: {}",counter.hash_id);
+        storage.hash=hash;//store hash
+        counter.hash_id+=1; //increment hash_id for next hash
+        counter.verified=false;//reset verified to false for next hash
+
         Ok(())
     }
     pub fn verify_ed25519_instruction(
@@ -91,17 +90,6 @@ pub mod hasher{
 
 
 
-// #[derive(AnchorSerialize, AnchorDeserialize)]
-// #[derive(BorshSerialize,BorshDeserialize)]
-// struct Ed25519SignatureOffsets {
-//     signature_offset: u16,
-//     signature_instruction_index: u16,
-//     public_key_offset: u16,
-//     public_key_instruction_index: u16,
-//     message_data_offset: u16,
-//     message_data_size: u16,
-//     message_instruction_index: u16,
-// }
 
 #[derive(Accounts)]
 
