@@ -1,7 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::errors::CounterError;
 use anchor_lang::prelude::*;
-use borsh::{BorshDeserialize, BorshSerialize};
 use anchor_lang::solana_program::sysvar::instructions::{load_instruction_at_checked, load_current_index_checked};
 pub mod errors;
 declare_id!("EbRPnJaaBXkbur5nPB9BTfSf3w8FbiYnJQDAgmp78Esx");
@@ -170,7 +169,7 @@ pub struct Counter{
 #[derive(InitSpace)]
 pub struct Hashes{
     pub hash_id: u64,
-    #[max_len(32)]
+    #[max_len(64)]
     pub hash: String,
 }
 
