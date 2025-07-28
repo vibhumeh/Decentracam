@@ -31,10 +31,10 @@ pub mod hasher{
     }
     pub fn verify_ed25519_instruction(
         ctx: Context<VerifyEd25519Instruction>,
-        expected_public_key: Vec<u8>,
         message: Vec<u8>,
         signature: Vec<u8>,
     ) -> Result<()> {
+        const AUTHORIZED_PUBKEY: [u8; 32]=[23,178,122,38,211,55,76,80,70,220,193,5,46,202,218,182,51,49,116,255,119,138,23,143,7,244,147,71,171,182,249,197];
         let instruction_sysvar = &ctx.accounts.instruction_sysvar;
     
         // Load the current index of instructions
@@ -64,7 +64,7 @@ pub mod hasher{
     
         // Verify public key
         let pubkey_end = public_key_offset + 32;
-        if &instruction_data[public_key_offset..pubkey_end] != expected_public_key {
+        if &instruction_data[public_key_offset..pubkey_end] != AUTHORIZED_PUBKEY {
             return Err(ErrorCode::InvalidPublicKey.into());
         }
     
