@@ -12,18 +12,20 @@ pub mod hasher{
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let counter=&mut ctx.accounts.counter;
         counter.hash_id=1;//start from 1. increment by 1 AFTER checking with hash_counter each time
+        counter.verified_hash=[0;32]; //initialize previous hash to zero
         //first hash will have hash_id=1 
         counter.verified=false;
         Ok(())
     }
-    pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64,hash: String) -> Result<()>{
+    pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64) -> Result<()>{
         let counter=&mut ctx.accounts.counter;
         let storage=&mut ctx.accounts.hashes;
 
         require!(counter.verified,ErrorCode::InvalidHash);
         require!(hash_id==counter.hash_id,CounterError::InvalidID);
+        
         storage.hash_id=hash_id;
-        storage.hash=hash;//store hash
+        storage.hash=counter.verified_hash;//store hash
         counter.hash_id+=1; //increment hash_id for next hash
         counter.verified=false;//reset verified to false for next hash
 
@@ -31,7 +33,7 @@ pub mod hasher{
     }
     pub fn verify_ed25519_instruction(
         ctx: Context<VerifyEd25519Instruction>,
-        message: Vec<u8>,
+        message: Vec<u8>,//Hash of image
         signature: Vec<u8>,
     ) -> Result<()> {
         const AUTHORIZED_PUBKEY: [u8; 32]=[23,178,122,38,211,55,76,80,70,220,193,5,46,202,218,182,51,49,116,255,119,138,23,143,7,244,147,71,171,182,249,197];
@@ -82,6 +84,7 @@ pub mod hasher{
 
         // If all checks pass, return Ok
         let counter = &mut ctx.accounts.counter;
+        counter.verified_hash = message[0..32].try_into().unwrap_or([0; 32]); // Store the first 32 bytes of the message as previous hash
         counter.verified=true;
         Ok(())
     }
@@ -148,6 +151,7 @@ pub struct VerifyEd25519Instruction<'info> {
 #[derive(InitSpace)]
 pub struct Counter{
     pub hash_id: u64,
+    pub verified_hash:[u8; 32],
     pub verified: bool,
 }
 
@@ -158,7 +162,7 @@ pub struct Counter{
 pub struct Hashes{
     pub hash_id: u64,
     #[max_len(64)]
-    pub hash: String,
+    pub hash: [u8; 32],
 }
 
 
