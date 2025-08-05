@@ -125,5 +125,10 @@ pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64) -> Result<()>{
         Ok(())
     }
 ```
+## Notes
+- The app uses an embedded private key (for V0) to verify source. This is temporary low-security method for the POC app 
+- For serious testers, please DM on @TheDecentracam [twitter](https://x.com/TheDecentracam) for keypair files.
+- Store the keys in the root directory as 'auth_privkey.json' and 'auth_pubkey.json'
+- You may edit the smart contract to use your own custom keypair.
 
 
