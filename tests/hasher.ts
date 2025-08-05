@@ -75,10 +75,10 @@ let wrongSignature;
 
 
 
-  it("Fails to Stores hash!", async () => {
+  it("Fails to stores hash without verification", async () => {
     await hasherProgram.methods.storeHash(
       new anchor.BN(1),
-      message,
+
     ).rpc();
     const [hasherAddress] = await PublicKey.findProgramAddressSync(
       [Buffer.from("hash"),                                      // b"hash"
@@ -107,10 +107,10 @@ let wrongSignature;
 
 
 
-  it("fails to Store second hash!", async () => {
+  it("fails to store second hash without verification", async () => {
     await hasherProgram.methods.storeHash(
       new anchor.BN(2),
-      message,
+
     ).rpc();
     const [hasherAddress] = await PublicKey.findProgramAddressSync(
       [Buffer.from("hash"),                                      // b"hash"
@@ -163,45 +163,11 @@ console.log("Message length:", message.length);     // whatever is fine
     console.log("Counter: ", counter);
   })
   
-  it("Tries to store an unverified hash and fails", async () => {
-    await hasherProgram.methods.storeHash(
-      new anchor.BN(1),
-      message2,//This is the unverified message,so it should fail to add this hash
-    ).rpc();
-    const [hasherAddress] = await PublicKey.findProgramAddressSync(
-      [Buffer.from("hash"),                                      // b"hash"
-      signer.toBuffer(),                              // signer.key().as_ref()
-      new anchor.BN(1).toArrayLike(Buffer, "le", 8)], //remember to change this too
-      hasherProgram.programId,
-    );    
-    const hashes=await hasherProgram.account.hashes.fetch(hasherAddress);
-    console.log("---------------------------------------------------");
-    console.log("The stored Hash should be the same as the one we passed in, and hashID should be 1 since this is the first hash of our user");
-    console.log("Hash: ", hashes);
-    console.log("---------------------------------------------------");
-    const [counterAddress] = await PublicKey.findProgramAddressSync(
-      [Buffer.from("counter"),                                      // b"counter"
-        signer.toBuffer()],                             // signer.key().as_ref()
-      hasherProgram.programId,
-    );    
-    const counter=await hasherProgram.account.counter.fetch(counterAddress);
-    console.log("---------------------------------------------------");
-    console.log("The counter should now have updated to 2, and the verified bool should have become false since the verified hash is already stored in the PDA");
-    console.log("Counter: ", counter);
-    console.log("---------------------------------------------------");
-    expect(counter.hashId.toNumber()).to.equal(2);
-    
-    expect(hashes.hashId.toNumber()).to.equal(1);
-    expect(hashes.hashId.toNumber()).to.equal(1);
 
-
-
-  })
 
   it("Stores correct hash properly after verification!!", async () => {
     await hasherProgram.methods.storeHash(
       new anchor.BN(1),
-      message,
     ).rpc();
     const [hasherAddress] = await PublicKey.findProgramAddressSync(
       [Buffer.from("hash"),                                      // b"hash"
