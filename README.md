@@ -4,26 +4,17 @@ This app captures a message (e.g. hash of an image), verifies an Ed25519 signatu
 Aimed at proving authenticity and user-level proof-of-ownership on Solana.
 
 ---
+> **Note:**  
+> The mobile app included in this repo is an earlier prototype and **not connected to the final blockchain backend.**  
+> For the actual production-ready app, please visit:  
+> [DecentraCam Mobile App Repo](https://github.com/vibhumeh/DecentraCam-Android)
+
 
 ## Dependencies
 
 ### Rust / On-chain (Anchor)
 - `anchor-lang`
 - `solana_program::sysvar::instructions`
-- Internal modules:
-  - `crate::errors::ErrorCode`
-  - `crate::errors::CounterError`
-
-### Frontend (React Native + Expo)
-- `expo-camera`
-- `expo-image`
-- `expo-file-system`
-- `react-native` UI + icon libraries: `@expo/vector-icons`, `react-native`
-- `crypto-js` (for hashing images as SHA-256)
-- `tweetnacl` (for Ed25519 signatures)
-- `@solana/web3.js`
-- `@coral-xyz/anchor`
-- `anchor-bankrun` (for local test harness)
 
 ---
 
@@ -39,17 +30,12 @@ Make sure a persistent local validator is running in another terminal:
 ```bash
 solana-test-validator
 ```
-
-## Running the App (Frontend)
-Download the Expo Go app on your phone
-
-In your terminal, go to the frontend folder:
-
+To deploy:
 ```bash
-cd app/decentracam
-npx expo start
+anchor deploy
 ```
-Scan the QR code in Expo Go to launch the app on your phone
+This will deploy on devnet. Please make sure you have sol in your solana client wallet.
+
 
 # Signature Verification (Ed25519 Syscall)
 
@@ -120,19 +106,24 @@ Checked against the expected public key
 
 Based on the exact message (typically SHA-256)
 
+**Note:** This is an older version of the function, but I'm leaving it here since it still clearly explains the logic.
+
 # Storing the Hash on-chain
 ```rust
-pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64,hash: String) -> Result<()>{
+pub fn store_hash(ctx:Context<StoreHash>,hash_id: u64) -> Result<()>{
         let counter=&mut ctx.accounts.counter;
         let storage=&mut ctx.accounts.hashes;
 
         require!(counter.verified,ErrorCode::InvalidHash);
         require!(hash_id==counter.hash_id,CounterError::InvalidID);
+        
         storage.hash_id=hash_id;
-        storage.hash=hash;//store hash
+        storage.hash=counter.verified_hash;//store hash
         counter.hash_id+=1; //increment hash_id for next hash
         counter.verified=false;//reset verified to false for next hash
 
         Ok(())
     }
 ```
+
+
