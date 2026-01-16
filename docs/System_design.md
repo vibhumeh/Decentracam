@@ -15,10 +15,10 @@ The system consists of three components that collaborate to ensure image authent
 
 The architecture consists of 3 parts. 2 offchain and 1 onchain.
 
--
+
 The onchain environment consists simply of the smart contracts which conducts the verification signatures, storage of hash, and increments of counter. This environment is considered to be a trusted.
 
--
+
 The offchain section contains two parts, The TEE and the mobile OS running the app. The latter could be further subdivided into the app and the OS on which it runs on.  
 The TEE is treated as a conditional trust anchor. The operating system and application runtime are adversarial, while the application code is open sourced and identifiable, but not trusted at runtime.  
 The role of the TEE is to attest to application identity and bind cryptographic operations to that identity, preventing untrusted software from impersonating the authorized application.
