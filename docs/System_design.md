@@ -1,5 +1,5 @@
 # System Design
-The threat model documentation showed us where the naive solution of our prototype fails, now we are going to propose a design which targets to solve all the threats within our scope, under the assumption of a hostile OS.
+The threat model highlights where a naive hash-on-chain prototype fails under adversarial assumptions. This document proposes a system design intended to address the identified threats within scope, under the assumption of a hostile mobile operating system.
 
 ## Goals
 - Capture-time authenticity
@@ -8,22 +8,22 @@ The threat model documentation showed us where the naive solution of our prototy
 
 ## Architecture
 
-The system is divided into three components that collaborate to ensure image authenticity.
+The system consists of three components that collaborate to ensure image authenticity.
 - Application layer
 - Trusted execution environment (TEE)
 - Blockchain layer
 
-The architecture consisists of 3 parts. 2 offchain and 1 onchain.
+The architecture consists of 3 parts. 2 offchain and 1 onchain.
 
 -
-The onchain enviorment consists simply of the smart contracts which conducts the verification signatures, storage of hash, and increments of counter. This enviorment is considered to be a trusted.
+The onchain environment consists simply of the smart contracts which conducts the verification signatures, storage of hash, and increments of counter. This environment is considered to be a trusted.
 
 -
 The offchain section contains two parts, The TEE and the mobile OS running the app. The latter could be further subdivided into the app and the OS on which it runs on.  
-The TEE is considered to be trusted. the OS in between is malacious, while the app code is open sourced, hence is auditable.   
-The goal of the TEE is to verify that the **correct app is running** and the OS is not placing a trojan horse posing as the authorised app.  
+The TEE is treated as a conditional trust anchor. The operating system and application runtime are adversarial, while the application code is open sourced and identifiable, but not trusted at runtime.  
+The role of the TEE is to attest to application identity and bind cryptographic operations to that identity, preventing untrusted software from impersonating the authorized application.
 
-Think of the application as a island floating on a malicious OS, And the TEE forms a bridge over this sea, locking the island in place, and allows a trusted path through the malicious OS, onto 'trusted' land
+Think of the application as an island floating on a malicious OS, and the TEE forms a bridge over this sea, locking the island in place, and allows a trusted path through the malicious OS, onto 'trusted' land
 
 ## Pipeline
 
@@ -38,28 +38,24 @@ Think of the application as a island floating on a malicious OS, And the TEE for
 
 ---  
 **1. Key Establishment and Identity Binding**  
-Establishes a signing identity that cannot be forged by the OS. 
-The application creates an attestation from the TEE which is verified onchain, after which a public key is stored on the blockchain corresponding to a private key linked to this application in the TEE.  
+Establishes a signing identity that cannot be forged by the operating system. An application-scoped keypair is generated within the TEE, and an attestation over the public key is verified on-chain. Upon successful verification, the public key is registered as the authorized signing identity for subsequent submissions.
 
 **2. Image Capture and Hashing**  
-Image is captured by phone camera,the image along with specific metadata is hashed.
+Image is captured by phone camera,the image along with specific metadata is hashed. This step alone does not establish authenticity, as image capture and hashing occur in an untrusted environment.
 
 **3. Signature Generation within Trusted Boundary**.  
-Now, the application supplies the hash to the TEE to be signed by the privatekey generated in step 1.  
-The TEE authenticates the application is authorised, and signs the hash. 
-The signing process is done completely within the TEE.  
-The TEE does not validate image provenance; it only ensures that the signing key is bound to an authenticated application identity
->Note: In case we also wish to prevent replay attacks of the same signature + hash pair, we may include a monotonic counter. i.e we sign: which is in sync with a counter on-chain. if the onchain counter doesn't match the signed counter in the metadata, the transaction can be rejected.
+The application supplies the image hash (and optional metadata) to the TEE, requesting a signature using the previously attested private key. The TEE verifies the calling application's identity before performing the signing operation.  
+The TEE does not validate image provenance; it only ensures that the signing key is bound to an authenticated application identity  
+>To prevent replay attacks, the signed message may include a monotonic counter synchronized with on-chain state. Transactions containing stale or repeated counters are rejected during verification.
 
 **4.Transaction Construction**  
-This signed message exits the TEE and returns to the application. we use it to construct a transaction to interact with the blockchain.  
+This signed message exits the TEE and returns to the application. The application constructs a transaction to interact with the blockchain.  
 
 **5. On-Chain Verification**  
-The signature over the hash (and counter) is verified and counter is compared to onchain counter. If successful, the blockchain sends an acknowledgment to the application of the user. now the onchain counter and the users counter is incremented.  
-(details of how counter is implimented in whitepaper).  
+The blockchain verifies the signature against the registered public key and checks replay protection conditions (e.g., monotonic counter consistency). Upon successful verification, on-chain state is updated to reflect the accepted submission.
 
 **6. Immutable Recording**  
-If the previous step is succesful, the hash is immutably stored onchain, providing immutable proof of the capture of that image.  
+If verification succeeds, the hash is immutably recorded on-chain as a verifiable capture event.  
 
 
 ---
@@ -70,8 +66,7 @@ If the previous step is succesful, the hash is immutably stored onchain, providi
 
 
 ## Conclusion
-This concludes what brief overviews I could cover here, for further details on exact implimentation specs, cost analysis etc (specifically for solana blockchain) it is covered in the whitepaper. 
-The whitepaper also covers threat models with this specific implimentation in mind and highlights the shortcomings and possible future solutions which we have not detailed here.
+This concludes what brief overviews I could cover here, for further details on exact implementation specs, cost analysis etc (specifically for solana blockchain) it is covered in the whitepaper. 
+The whitepaper also covers threat models with this specific implementation in mind and highlights the shortcomings and possible future solutions which we have not detailed here.
 
-Since solana lacks the cryptographic precompiles to verify an attestation, we will require ZK proofs to do it offchain in a verifiable. however, other chains like ethereum could serve as better chains for this app due to the availibility of the required precompiles
-
+Since Solana currently lacks native precompiles for attestation verification, the design relies on off-chain generation of zero-knowledge proofs to enable on-chain validation. Other blockchains with richer cryptographic precompiles may offer alternative implementation trade-offs.

@@ -9,36 +9,27 @@
 
 
 
-## ASSET OF INTEREST (what we are trying to protect)
-- Integrity of the hashed image
-The image that has been hashed and stored onchain has been proven to be taken by the camera of the user, and isn't sourced externally. This image isn't edited in any way or form, and is provably **not** AI generated. similarly about the image metadata
-- Connection betweeen the user and the image
+## Assets of Interest
+- Integrity and provenance of the hashed image
+  The image hash recorded on-chain is intended to correspond to a genuine camera capture event performed on the user’s device, and not to externally sourced or post-processed data. This includes the integrity of associated capture metadata.
+- Binding between the image and the claimed user identity
 
-## Adversarial capibilities 
+## Adversarial Capabilities 
 - Full control over mobile OS
 - Ability to modify application binaries
 - Ability to reorder and replay transactions
 - Ability to submit arbitrary data onchain
 - Capacity to extract embedded keys
 ### Possible adversary goals:
-- Succesfully Submit hash of edited image 
+- Successfully submit a hash corresponding to a post-capture modified image
 
 (any changes after camera capture is considered as edits.)
-- Successfully submit hash of a AI generated or self generated image
-
-
-. 
-
-.
-
-.
-
-.
+- Successfully submit a hash corresponding to a non-capture (synthetic or externally generated) image
 
 
 
 
-### - Any verified submission of a hash which is not of a image taken by the phone camera is considered a failure of the protocol.
+###  Any verified submission of a hash that does not correspond to a genuine camera capture event on the device is considered a failure of the protocol.
 
 
 
@@ -51,7 +42,7 @@ We can assume blockchain execution to be secure due to the consensus mechanism u
 
 - Cryptographic primitives
 
-If cryptography primitives fail we have bigger problems than this app to worry about
+Standard cryptographic primitives are assumed to be secure and correctly implemented.
 
 ##
 ## Threats considered 
@@ -62,7 +53,7 @@ attacker edits/generates an image outside the camera pipeline.
 Then the hostile OS feeds it to application as if it passed through camera pipeline, allowing hashing and signature over non-authenticated data.
 ### property violated
 
-origin authenticity
+Origin authenticity
 
 ### Status
 - Unaddressed in prototype
@@ -78,7 +69,7 @@ The hostile OS allows manipulation and editing of the image before it reaches ap
 allowing hashing and signature over non-authenticated data.
 ### property violated
 
-origin authenticity
+Origin authenticity
 
 ### Status
 - Unaddressed under hostile OS
@@ -88,7 +79,7 @@ origin authenticity
 >
 >  
 >
-### **Key Extraction and Signature Forgery**
+### **3. Key Extraction and Signature Forgery**
 ### Attack
 Embedded key is extracted from application binary
 arbitrary hashes can now be signed by attacker
@@ -147,13 +138,13 @@ None (if on-chain verification is correct)
 - Addressed by on-chain verification logic
 
 
-## Threats Out of scope
+## Threats Out of Scope
 - Hardware side channel attacks
 Sophisticated enough hardware attacks cannot be defended by any sort of software, since the attacker has full access to the device we are attempting to build a trust model around. 
 - TEE vendor compromise
-The design problem uses the TEE as a trusted enviornment. If it is compromised by the vendor, the model can no longer be trusted.
+The design problem uses the TEE as a trusted environment. If it is compromised by the vendor, the model can no longer be trusted.
  
-##  Relationship Between Threat Model and Prototype
+## Relationship Between Threat Model and Prototype
 The current prototype does not address the majority of threats identified above. This gap highlights the limitations of naive hash-on-chain approaches under hostile execution
 
 This motivates us to have a stronger system design which can be trusted even in hostile OS conditions.
